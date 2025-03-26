@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, url_for, session
+from flask import Flask, request, render_template_string, session, redirect, url_for,render_template
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
@@ -14,11 +14,60 @@ products = {
 }
 
 # Admin message (Vulnerable to SSTI)
-admin_message = "Welcome to our store!"
+admin_message = "Welcome to our store!"  # Will be evaluated inside render_template_string()
 
 @app.route("/", methods=["GET"])
 def home():
-    return render_template("home.html", admin_message=admin_message, products=products)
+    global admin_message
+    return render_template_string(
+        """ 
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>E-Shop</title>
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+        </head>
+        <body>
+            <nav class="navbar navbar-dark bg-dark p-3">
+                <a class="navbar-brand text-light" href="#">🛒 E-Shop</a>
+                <div>
+                    {% if 'username' in session %}
+                        <span class="text-light">Logged in as {{ session['username'] }}</span>
+                        <a href="/logout" class="btn btn-outline-light ms-2">Logout</a>
+                    {% else %}
+                        <a href="/login" class="btn btn-outline-light">Login</a>
+                    {% endif %}
+                </div>
+            </nav>
+
+            <div class="container mt-4">
+                <h1 class="mb-3">🛒 Welcome to E-Shop</h1>
+                <p class="alert alert-info">""" + admin_message + """</p>  <!-- ⚠️ Now Vulnerable -->
+
+                <div class="row">
+                    {% for id, product in products.items() %}
+                        <div class="col-md-4">
+                            <div class="card">
+                                <img src="{{ product.image }}" class="card-img-top" alt="Product Image" height="200">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ product.name }}</h5>
+                                    <p class="card-text">${{ product.price }}</p>
+                                    <a href="/buy/{{ id }}" class="btn btn-primary">Buy Now</a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        </body>
+        </html>
+        """,
+        session=session, products=products  # Passing session so Jinja can access it
+    )
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -32,7 +81,28 @@ def login():
         else:
             return "Invalid credentials. <a href='/login'>Try again</a>"
 
-    return render_template("login.html")
+    return render_template_string("""
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-3">🔑 Login</h1>
+        <form method="post">
+            <label class="form-label">Username:</label>
+            <input type="text" name="username" class="form-control mb-3">
+            <label class="form-label">Password:</label>
+            <input type="password" name="password" class="form-control mb-3">
+            <input type="submit" value="Login" class="btn btn-primary">
+        </form>
+    </div>
+</body>
+</html>
+    """)
 
 @app.route("/logout")
 def logout():
@@ -56,7 +126,7 @@ def admin():
         return "Access Denied!"
 
     if request.method == "POST":
-        admin_message = request.form.get("message", "Welcome!")  # ⚠️ SSTI Vulnerability
+        admin_message = request.form.get("message", "Welcome!")  # ⚠️ Directly Assigning User Input
 
     return render_template("admin.html", admin_message=admin_message)
 

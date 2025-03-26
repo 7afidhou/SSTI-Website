@@ -12,7 +12,7 @@
         <a class="navbar-brand text-light" href="#">🛒 E-Shop</a>
         <div>
             {% if 'username' in session %}
-                <span class="text-light">Logged in as {{ session['username'] }}</span>
+                <span class="text-light">{{ session['username'].capitalize() }}</span>
                 <a href="/logout" class="btn btn-outline-light ms-2">Logout</a>
             {% else %}
                 <a href="/login" class="btn btn-outline-light">Login</a>
@@ -22,7 +22,7 @@
 
     <div class="container mt-4">
         <h1 class="mb-3">🛒 Welcome to E-Shop</h1>
-        <p class="alert alert-info">{{ admin_message }}</p> <!-- ⚠️ SSTI Here -->
+        <p class="alert alert-info">{{ admin_message | safe }}</p> <!-- ⚠️ SSTI Here -->
 
         <div class="row">
             {% for id, product in products.items() %}
