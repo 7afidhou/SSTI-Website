@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Shop</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-dark p-3">
+        <a class="navbar-brand text-light" href="#">🛒 E-Shop</a>
+        <div>
+            {% if 'username' in session %}
+                <span class="text-light">Logged in as {{ session['username'] }}</span>
+                <a href="/logout" class="btn btn-outline-light ms-2">Logout</a>
+            {% else %}
+                <a href="/login" class="btn btn-outline-light">Login</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <h1 class="mb-3">🛒 Welcome to E-Shop</h1>
+        <p class="alert alert-info">{{ admin_message }}</p> <!-- ⚠️ SSTI Here -->
+
+        <div class="row">
+            {% for id, product in products.items() %}
+                <div class="col-md-4">
+                    <div class="card">
+                        <img src="{{ product.image }}" class="card-img-top" alt="Product Image" height="200" > 
+                        <div class="card-body">
+                            <h5 class="card-title">{{ product.name }}</h5>
+                            <p class="card-text">${{ product.price }}</p>
+                            <a href="/buy/{{ id }}" class="btn btn-primary">Buy Now</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
